@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: demo/api/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - api/.env
+    volumes:
+      - api-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  api-data:
