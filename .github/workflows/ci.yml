@@ -23,12 +23,12 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
-      - name: Configure GitHub Packages for @bay1inc scope
-        run: echo "@bay1inc:registry=https://npm.pkg.github.com" >> .npmrc && echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+      - name: Configure GitHub Packages auth
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
         working-directory: api
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: api
 
       - name: Typecheck
