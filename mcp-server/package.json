@@ -10,7 +10,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@highnoteplatform/sdk": "file:../../",
+    "@bay1inc/sdk": "*",
     "@modelcontextprotocol/sdk": "^1.12.1"
   },
   "devDependencies": {

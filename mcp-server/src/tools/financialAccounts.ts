@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Highnote } from "@highnoteplatform/sdk";
-import { FinancialAccountSuspensionReasonInput } from "@highnoteplatform/sdk";
+import type { Highnote } from "@bay1inc/sdk";
+import { FinancialAccountSuspensionReasonInput } from "@bay1inc/sdk";
 import { z } from "zod";
 
 export function registerFinancialAccountTools(

@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Highnote } from "@highnoteplatform/sdk";
+import type { Highnote } from "@bay1inc/sdk";
 import { z } from "zod";
 
 export function registerApplicationTools(server: McpServer, client: Highnote) {

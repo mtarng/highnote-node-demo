@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { highnote } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError, FinancialAccountSuspensionReasonInput } from "@highnoteplatform/sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError, FinancialAccountSuspensionReasonInput } from "@bay1inc/sdk";
 import {
   IssueFinancialAccountBodySchema,
   SuspendFinancialAccountBodySchema,
