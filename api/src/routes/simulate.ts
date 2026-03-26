@@ -61,7 +61,7 @@ export async function simulateRoutes(app: FastifyInstance) {
         ...(merchantName || categoryCode ? {
           merchantDetails: {
             ...(merchantName && { name: merchantName }),
-            ...(categoryCode && { category: categoryCode }),
+            ...(categoryCode && { category: categoryCode as any }),
           },
         } : {}),
       });
@@ -125,7 +125,7 @@ export async function simulateRoutes(app: FastifyInstance) {
         ...(merchantName || categoryCode ? {
           merchantDetails: {
             ...(merchantName && { name: merchantName }),
-            ...(categoryCode && { category: categoryCode }),
+            ...(categoryCode && { category: categoryCode as any }),
           },
         } : {}),
       });
