@@ -6,17 +6,17 @@
   --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Slate-teal palette — replaces generic indigo */
-  --color-brand-50: #f0fdf9;
-  --color-brand-100: #ccfbef;
-  --color-brand-200: #99f6de;
-  --color-brand-300: #5ceacb;
-  --color-brand-400: #2dd4b3;
-  --color-brand-500: #14b89c;
-  --color-brand-600: #0d9480;
-  --color-brand-700: #0f7669;
-  --color-brand-800: #115e55;
-  --color-brand-900: #134e47;
+  /* Indigo-purple brand palette */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
 
   --color-navy-50: #f5f7fa;
   --color-navy-100: #ebeef3;

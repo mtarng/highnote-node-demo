@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useEnvironment } from "../context/EnvironmentContext";
 import { ErrorMessage } from "../components/ErrorMessage";
 
 export function LoginPage() {
@@ -10,6 +11,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
+  const { isTestEnv } = useEnvironment();
   const navigate = useNavigate();
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -46,9 +48,19 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-slate-100 px-4">
       <div className="w-full max-w-md">
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h1 className="mb-1 text-center text-3xl font-extrabold tracking-tight text-indigo-600">
-            Bay19
-          </h1>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <img src="/favicon.svg" alt="Bay19" className="w-8 h-8" />
+            <h1 className="text-3xl font-extrabold tracking-tight text-indigo-600">
+              Bay19
+            </h1>
+          </div>
+          {isTestEnv && (
+            <div className="flex justify-center">
+              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                Test
+              </span>
+            </div>
+          )}
           <p className="mb-1 text-center text-xs font-medium text-gray-400">
             Prepaid Debit, Simplified
           </p>

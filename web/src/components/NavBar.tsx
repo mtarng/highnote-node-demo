@@ -30,8 +30,13 @@ export function NavBar() {
           to="/"
           className="text-lg font-bold tracking-tight text-brand-700 no-underline flex items-center gap-1.5"
         >
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-brand-600 text-white text-xs font-bold">B</span>
+          <img src="/favicon.svg" alt="Bay19" className="w-7 h-7" />
           Bay19
+          {isTestEnv && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              Test
+            </span>
+          )}
         </Link>
         <div className="flex items-center gap-1">
           {navLink("/", "Dashboard")}
