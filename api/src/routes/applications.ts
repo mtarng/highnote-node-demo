@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { highnote, cardProductId } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError, DocumentUploadClientTokenPermission } from "@bay1inc/sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError, DocumentUploadClientTokenPermission } from "@mtarng/highnote-sdk";
 import { CreateApplicationBodySchema, DocumentTokenBodySchema, IdParamsSchema } from "../types.js";
 import { getUserAccountHolderId } from "../middleware/auth.js";
 

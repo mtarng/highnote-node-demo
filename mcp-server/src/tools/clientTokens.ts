@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Highnote } from "@bay1inc/sdk";
-import { PaymentCardClientTokenPermission } from "@bay1inc/sdk";
+import type { Highnote } from "@mtarng/highnote-sdk";
+import { PaymentCardClientTokenPermission } from "@mtarng/highnote-sdk";
 import { z } from "zod";
 
 export function registerClientTokenTools(server: McpServer, client: Highnote) {

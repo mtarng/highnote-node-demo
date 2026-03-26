@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { highnote, cardProductId } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError } from "@bay1inc/sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError } from "@mtarng/highnote-sdk";
 
 export async function cardProductRoutes(app: FastifyInstance) {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { randomUUID } from "crypto";
 import { highnote } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError } from "@bay1inc/sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError } from "@mtarng/highnote-sdk";
 import {
   SimulateAuthorizeBodySchema,
   SimulateClearBodySchema,

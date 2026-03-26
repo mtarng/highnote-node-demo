@@ -10,7 +10,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@bay1inc/sdk": "0.1.0-alpha.2",
+    "@mtarng/highnote-sdk": "0.1.0-alpha.3",
     "@fastify/cors": "^11.2.0",
     "@fastify/swagger": "^9.7.0",
     "@fastify/swagger-ui": "^5.2.5",

@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db/index.js";
 import { highnote } from "../services/highnote.js";
-import { PhoneLabel, HighnoteUserError, HighnoteAccessDeniedError } from "@bay1inc/sdk";
+import { PhoneLabel, HighnoteUserError, HighnoteAccessDeniedError } from "@mtarng/highnote-sdk";
 import {
   SignupBodySchema,
   LoginBodySchema,

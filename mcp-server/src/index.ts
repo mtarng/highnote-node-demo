@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { Highnote } from "@bay1inc/sdk";
+import { Highnote } from "@mtarng/highnote-sdk";
 
 import { registerAccountHolderTools } from "./tools/accountHolders.js";
 import { registerApplicationTools } from "./tools/applications.js";
