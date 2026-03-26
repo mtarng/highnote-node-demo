@@ -10,7 +10,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@bay1inc/sdk": "0.1.0-alpha.1",
+    "@bay1inc/sdk": "0.1.0-alpha.2",
     "@modelcontextprotocol/sdk": "^1.12.1"
   },
   "devDependencies": {
