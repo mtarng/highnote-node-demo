@@ -1,6 +1,6 @@
 # Highnote MCP Server
 
-An MCP (Model Context Protocol) server that wraps the [Highnote Node SDK](https://github.com/highnoteplatform/highnote-node) so that Claude or any MCP client can manage Highnote resources conversationally.
+An MCP (Model Context Protocol) server that wraps the [Highnote Node SDK](https://github.com/bay1inc/highnote-nodejs-sdk) so that Claude or any MCP client can manage Highnote resources conversationally.
 
 ## Available Tools
 

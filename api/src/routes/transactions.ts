@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { highnote } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError } from "@mtarng/highnote-sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError } from "@highnoteplatform/highnote-nodejs-sdk";
 import { TransactionQuerySchema } from "../types.js";
 import { getUserResourceIds } from "../middleware/auth.js";
 import { z } from "zod";

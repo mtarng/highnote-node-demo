@@ -1,5 +1,5 @@
-import { Highnote } from "@mtarng/highnote-sdk";
-import type { HighnoteEnvironment } from "@mtarng/highnote-sdk";
+import { Highnote } from "@highnoteplatform/highnote-nodejs-sdk";
+import type { HighnoteEnvironment } from "@highnoteplatform/highnote-nodejs-sdk";
 
 const apiKey = process.env.HIGHNOTE_API_KEY;
 if (!apiKey) {

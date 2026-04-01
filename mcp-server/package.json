@@ -10,7 +10,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@mtarng/highnote-sdk": "0.1.0-alpha.3",
+    "@highnoteplatform/highnote-nodejs-sdk": "^0.1.0-alpha.3",
     "@modelcontextprotocol/sdk": "^1.12.1"
   },
   "devDependencies": {
