@@ -13,7 +13,7 @@
   "dependencies": {
     "@highnoteplatform/card-viewer": "^1.4.1",
     "@highnoteplatform/document-upload": "^1.1.4",
-    "@highnoteplatform/secure-inputs": "^1.6.0",
+    "@highnoteplatform/secure-inputs": "^1.7.0",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.91.0",
     "@types/leaflet": "^1.9.21",
