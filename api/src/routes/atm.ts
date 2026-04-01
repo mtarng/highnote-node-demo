@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { highnote } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError } from "@highnoteplatform/highnote-nodejs-sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError } from "@highnote-ts/highnote-nodejs-sdk";
 import { FindATMLocationsBodySchema } from "../types.js";
 
 function handleError(err: unknown, reply: any) {
