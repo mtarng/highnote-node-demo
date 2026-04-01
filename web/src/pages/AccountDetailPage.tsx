@@ -252,6 +252,8 @@ export function AccountDetailPage() {
             clientToken: token.value,
             paymentCardId: cardId,
             selector: "#pin-container",
+            masked: true,
+            showToggle: true,
           },
         },
         environment: "test",
@@ -1287,7 +1289,7 @@ export function AccountDetailPage() {
                   <label className="mb-1 block text-sm font-medium text-gray-700">Enter 4-digit PIN</label>
                   <div
                     id="pin-container"
-                    className="rounded-md border border-gray-300 p-2 [&_iframe]:!h-[40px] [&_iframe]:!w-full"
+                    className="[&_iframe]:!h-[40px] [&_iframe]:!w-full"
                   />
                 </div>
               )}
@@ -1468,8 +1470,16 @@ export function AccountDetailPage() {
               filterActivitiesBySearch(activities, activitySearch),
               activityStatusFilter,
             );
-            const pendingActivities = filteredActivities.filter((a: any) => !a.isComplete);
-            const postedActivities = filteredActivities.filter((a: any) => a.isComplete);
+            const isEffectivelyPending = (a: any) => {
+              if (!a.isComplete) return true;
+              // Non-card transfers with PENDING/PROCESSING status from SDK
+              const src = a.source as any;
+              const xferStatus = (src?.externalStatus ?? src?.integratorStatus)?.status;
+              if (xferStatus === "PENDING" || xferStatus === "PROCESSING") return true;
+              return false;
+            };
+            const pendingActivities = filteredActivities.filter(isEffectivelyPending);
+            const postedActivities = filteredActivities.filter((a: any) => !isEffectivelyPending(a));
 
             function renderActivity(activity: any, idx: number) {
               const sourceId = activity.source?.id ?? `activity-${idx}`;
@@ -1486,10 +1496,18 @@ export function AccountDetailPage() {
               const isApproved = !responseCode || responseCode === "APPROVED" || responseCode === "APPROVED_FOR_PARTIAL_AMOUNT" || responseCode === "APPROVED_FOR_PURCHASE_AMOUNT_ONLY";
               const isPending = !activity.isComplete && (activity.pendingAmount?.value ?? 0) > 0;
 
-              // Amount display
+              // Transfer-level data from enriched SDK fragments
+              const source = activity.source as any;
+              const transferStatus = (source?.externalStatus ?? source?.integratorStatus)?.status;
+              const transferReasonCode = (source?.externalStatus ?? source?.integratorStatus)?.statusReasonCode;
+              const transferAmount = source?.amount;
+              const transferCompanyName = source?.companyName;
+
+              // Amount display — prefer activity-level amounts, fall back to source-level
               const pending = activity.pendingAmount;
               const posted = activity.postedAmount;
-              const displayAmount = (posted?.value ?? 0) > 0 ? posted : pending;
+              const activityAmount = (posted?.value ?? 0) > 0 ? posted : (pending?.value ?? 0) > 0 ? pending : null;
+              const displayAmount = activityAmount ?? transferAmount;
               const amountDollars = displayAmount ? (Number(displayAmount.value) / 100).toFixed(2) : null;
               const isNegative = activity.sign === "NEGATIVE";
 
@@ -1507,15 +1525,28 @@ export function AccountDetailPage() {
                   statusLabel = "Cleared";
                   statusColor = "bg-green-100 text-green-800";
                 }
+              } else if (transferStatus) {
+                // Use real transfer status from SDK
+                const statusMap: Record<string, [string, string]> = {
+                  PROCESSED: ["Complete", "bg-green-100 text-green-800"],
+                  PROCESSING: ["Processing", "bg-yellow-100 text-yellow-800"],
+                  PENDING: ["Pending", "bg-yellow-100 text-yellow-800"],
+                  FAILED: ["Failed", "bg-red-100 text-red-800"],
+                  RETURNED: ["Returned", "bg-red-100 text-red-800"],
+                  REVERSED: ["Reversed", "bg-red-100 text-red-800"],
+                  CANCELED: ["Canceled", "bg-gray-100 text-gray-800"],
+                };
+                [statusLabel, statusColor] = statusMap[transferStatus] ?? [transferStatus, "bg-gray-100 text-gray-800"];
               } else {
                 statusLabel = activity.isComplete ? "Complete" : "Processing";
                 statusColor = activity.isComplete ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800";
               }
 
               // Description line
+              const transferLabel = typeLabels[activity.source?.__typename ?? ""] ?? activity.source?.__typename ?? "Activity";
               const description = isCardTx
                 ? `${merchantName || "Card Transaction"}${cardLast4 ? ` \u00b7 Card ${cardLast4}` : ""}`
-                : typeLabels[activity.source?.__typename ?? ""] ?? activity.source?.__typename ?? "Activity";
+                : transferCompanyName ? `${transferLabel} \u00b7 ${transferCompanyName}` : transferLabel;
 
               return (
                 <div key={sourceId} className="border-b border-gray-100 last:border-b-0">
@@ -1555,6 +1586,11 @@ export function AccountDetailPage() {
                         {(authEvent?.transactionProcessingType) && (
                           <div><dt className="text-gray-500">Processing Type</dt><dd className="text-gray-700">{authEvent.transactionProcessingType}</dd></div>
                         )}
+                        {transferStatus && <div><dt className="text-gray-500">Transfer Status</dt><dd className={`font-medium ${transferStatus === "PROCESSED" ? "text-green-700" : transferStatus === "FAILED" || transferStatus === "RETURNED" ? "text-red-700" : "text-yellow-700"}`}>{transferStatus}</dd></div>}
+                        {transferReasonCode && <div><dt className="text-gray-500">Failure Reason</dt><dd className="text-red-700 font-medium">{transferReasonCode.replace(/_/g, " ")}</dd></div>}
+                        {transferCompanyName && <div><dt className="text-gray-500">Company</dt><dd className="text-gray-700">{transferCompanyName}</dd></div>}
+                        {source?.settlementDate && <div><dt className="text-gray-500">Settlement Date</dt><dd className="text-gray-700">{source.settlementDate}</dd></div>}
+                        {transferAmount && <div><dt className="text-gray-500">Transfer Amount</dt><dd className="text-gray-700">${(Number(transferAmount.value) / 100).toFixed(2)} {transferAmount.currencyCode}</dd></div>}
                         {events.map((evt: any) => (
                           <div key={evt.id} className="col-span-2"><dt className="text-gray-500">Event ({evt.__typename})</dt><dd className="font-mono text-gray-700 break-all">{evt.id}</dd></div>
                         ))}

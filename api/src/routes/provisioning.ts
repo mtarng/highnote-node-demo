@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { createHash } from "crypto";
 import { highnote, cardProductId } from "../services/highnote.js";
-import { HighnoteUserError, HighnoteAccessDeniedError, ProvisionAccountHolderAction } from "@highnoteplatform/highnote-nodejs-sdk";
+import { HighnoteUserError, HighnoteAccessDeniedError, ProvisionAccountHolderAction } from "@highnote-ts/highnote-nodejs-sdk";
 import { ProvisionBodySchema } from "../types.js";
 
 export async function provisioningRoutes(app: FastifyInstance) {
