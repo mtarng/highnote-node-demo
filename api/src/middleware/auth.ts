@@ -49,13 +49,15 @@ async function authenticate(
 export function registerAuthHook(app: FastifyInstance): void {
   app.addHook("onRequest", async (request, reply) => {
     const url = request.url;
+    // Skip auth for non-API routes (static files, SPA fallback in production)
+    if (!url.startsWith("/api/")) {
+      return;
+    }
     if (
       url.startsWith("/api/auth") ||
-      url.startsWith("/health") ||
-      url.startsWith("/docs") ||
       url.startsWith("/api/card-products") ||
       url === "/api/config" ||
-      url === "/"
+      (url === "/api/webhooks" && request.method === "POST")
     ) {
       return;
     }

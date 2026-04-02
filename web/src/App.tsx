@@ -7,6 +7,7 @@ import { ApplyPage } from "./pages/ApplyPage";
 import { AccountDetailPage } from "./pages/AccountDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SimulatePage } from "./pages/SimulatePage";
+import { WebhooksPage } from "./pages/WebhooksPage";
 import type { ReactNode } from "react";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -67,6 +68,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SimulatePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/webhooks"
+          element={
+            <ProtectedRoute>
+              <WebhooksPage />
             </ProtectedRoute>
           }
         />
