@@ -1,117 +1,89 @@
-# Highnote Demo API
+# Highnote Node Demo
 
-A Fastify + SQLite (Drizzle ORM) REST API for a consumer prepaid card management dashboard, powered by the Highnote Node SDK.
+A full-stack demo app for the [Highnote](https://highnote.com) platform — consumer prepaid card management with webhook support.
 
-## Quick Start
+**Stack:** Fastify 5 + React 19 + SQLite (Drizzle ORM) + Highnote Node SDK
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/bay1inc/highnote-node-demo)
+
+## Deploy to Render
+
+1. Click the **Deploy to Render** button above (or fork this repo and create a new Web Service from `render.yaml`)
+2. Set the required environment variables:
+   - `HIGHNOTE_API_KEY` — your Highnote API key (from [dashboard.highnote.com](https://dashboard.highnote.com))
+   - `HIGHNOTE_CARD_PRODUCT_ID` — your card product ID
+3. Click **Create Web Service**
+
+### Webhook Setup
+
+After deployment:
+
+1. Log into the deployed app and open the Swagger docs at `/docs`
+2. Use `POST /api/webhooks/register` to register your webhook:
+   - `name`: any descriptive name (e.g., "Demo Webhook")
+   - `subscriptions`: array of event names (e.g., `["CARD_PAYMENT_AUTHORIZED_EVENT"]`)
+3. Copy the `secret` from `signingKeys` in the response
+4. In the Render dashboard, set `HIGHNOTE_WEBHOOK_SECRET` to that secret and redeploy
+5. Webhook events will appear on the **Events** page in the app
+
+## Local Development
 
 ### Prerequisites
 
 - Node.js 22+
-- A Highnote test API key (from [dashboard.highnote.com](https://dashboard.highnote.com))
+- A Highnote test API key
 - A card product ID from your Highnote dashboard
 
 ### Setup
 
 ```bash
-# From the repo root, build the SDK first
-npm run build
-
-# Set up the demo API
-cd demo/api
-cp .env.template .env
-# Edit .env with your HIGHNOTE_API_KEY and HIGHNOTE_CARD_PRODUCT_ID
-
+# API server (port 3000)
+cd api
+cp .env.template .env  # fill in your Highnote credentials
 npm install
-```
+npm run dev
 
-### Run (development)
-
-```bash
+# Web frontend (port 5173) — in a separate terminal
+cd web
+npm install
 npm run dev
 ```
 
-### Run (production)
+The web dev server proxies `/api` requests to the API server automatically.
+
+### Docker (local)
 
 ```bash
-npm run build
-npm start
-```
-
-### Run (Docker)
-
-```bash
-cd demo
 docker compose up --build
+# App available at http://localhost:3000
 ```
 
-## API Routes
+## Architecture
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/account-holders` | Create US person account holder |
-| GET | `/api/account-holders/:id` | Get account holder by Highnote ID |
-| GET | `/api/account-holders` | List account holders (local DB) |
-| POST | `/api/applications` | Create card product application |
-| GET | `/api/applications/:id` | Get application status |
-| POST | `/api/financial-accounts` | Issue financial account |
-| GET | `/api/financial-accounts/:id` | Get financial account |
-| POST | `/api/cards` | Issue a payment card |
-| POST | `/api/cards/:id/activate` | Activate a card |
-| POST | `/api/cards/:id/suspend` | Suspend a card |
-| GET | `/api/cards/:id` | Get card details |
-| GET | `/api/cards` | List cards (local DB) |
-| GET | `/api/transactions` | List transactions |
-| POST | `/api/client-tokens` | Generate client token |
-
-## Example: Full Card Issuance Flow
-
-```bash
-# 1. Create an account holder
-curl -X POST http://localhost:3000/api/account-holders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "givenName": "Jane",
-    "familyName": "Doe",
-    "dateOfBirth": "1990-01-15",
-    "email": "jane@example.com",
-    "streetAddress": "123 Main St",
-    "locality": "San Francisco",
-    "region": "CA",
-    "postalCode": "94105",
-    "phoneNumber": "5551234567",
-    "ssn": "123-45-6789"
-  }'
-
-# 2. Create an application (use the highnote_id from step 1)
-curl -X POST http://localhost:3000/api/applications \
-  -H "Content-Type: application/json" \
-  -d '{
-    "accountHolderId": "ahn_..."
-  }'
-
-# 3. Poll for approval
-curl http://localhost:3000/api/applications/app_...
-
-# 4. Issue a financial account (once application is APPROVED)
-curl -X POST http://localhost:3000/api/financial-accounts \
-  -H "Content-Type: application/json" \
-  -d '{
-    "applicationId": "app_...",
-    "name": "Main Spending Account"
-  }'
-
-# 5. Issue a card
-curl -X POST http://localhost:3000/api/cards \
-  -H "Content-Type: application/json" \
-  -d '{
-    "financialAccountId": "fa_..."
-  }'
-
-# 6. Generate a client token for the frontend
-curl -X POST http://localhost:3000/api/client-tokens \
-  -H "Content-Type: application/json" \
-  -d '{
-    "paymentCardId": "pc_..."
-  }'
 ```
+Single Container (Render Web Service)
+
+  Fastify Server (port 3000)
+
+  POST /api/webhooks        → Webhook receiver (public)
+  GET  /api/webhooks/events  → Event list (JWT-protected)
+  POST /api/webhooks/register → Setup (JWT-protected)
+  /api/*                     → REST API routes
+  /docs                      → Swagger UI
+  /*                         → Static files (Vite build)
+
+  SQLite (ephemeral, in-container)
+```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `HIGHNOTE_API_KEY` | Yes | Highnote API key (test or live) |
+| `HIGHNOTE_ENVIRONMENT` | Yes | `test` or `live` (default: `test`) |
+| `HIGHNOTE_CARD_PRODUCT_ID` | Yes | Card product for applications |
+| `HIGHNOTE_WEBHOOK_SECRET` | Deployed only | Signing secret from webhook registration |
+| `JWT_SECRET` | Deployed only | Auto-generated by Render |
+| `PORT` | No | Defaults to `3000` |
+| `CORS_ORIGIN` | No | Defaults to `http://localhost:5173` |
+| `DATABASE_URL` | No | SQLite path, defaults to `./data/highnote-demo.db` |
