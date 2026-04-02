@@ -4,7 +4,7 @@ A full-stack demo app for the [Highnote](https://highnote.com) platform — cons
 
 **Stack:** Fastify 5 + React 19 + SQLite (Drizzle ORM) + Highnote Node SDK
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/bay1inc/highnote-node-demo)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mtarng/highnote-node-demo)
 
 ## Deploy to Render
 
