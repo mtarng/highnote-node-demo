@@ -14,6 +14,15 @@ A full-stack demo app for the [Highnote](https://highnote.com) platform — cons
    - `HIGHNOTE_CARD_PRODUCT_ID` — your card product ID
 3. Click **Create Web Service**
 
+Once deployed, your app is available at `https://<your-app>.onrender.com`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/` | Web app (login, dashboard, card management) |
+| `/docs` | Swagger UI — interactive API documentation |
+| `/health` | Health check |
+| `/webhooks` | Webhook events viewer (requires login) |
+
 ### Webhook Setup
 
 After deployment:
