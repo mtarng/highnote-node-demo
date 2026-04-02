@@ -55,7 +55,8 @@ export function registerAuthHook(app: FastifyInstance): void {
       url.startsWith("/docs") ||
       url.startsWith("/api/card-products") ||
       url === "/api/config" ||
-      url === "/"
+      url === "/" ||
+      (url === "/api/webhooks" && request.method === "POST")
     ) {
       return;
     }

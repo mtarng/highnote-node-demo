@@ -10,3 +10,12 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+export const webhookEvents = sqliteTable("webhook_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  eventType: text("event_type").notNull(),
+  payload: text("payload").notNull(),
+  receivedAt: text("received_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});

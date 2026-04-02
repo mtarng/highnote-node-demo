@@ -9,6 +9,10 @@ import {
 import fastifyCors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import fastifyStatic from "@fastify/static";
+import fastifyRawBody from "fastify-raw-body";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { sqlite } from "./db/index.js";
 import { registerAuthHook } from "./middleware/auth.js";
 import { authRoutes, onboardRoute } from "./routes/auth.js";
@@ -24,12 +28,16 @@ import { simulateRoutes } from "./routes/simulate.js";
 import { externalAccountRoutes } from "./routes/externalAccounts.js";
 import { achTransferRoutes } from "./routes/ach.js";
 import { atmRoutes } from "./routes/atm.js";
+import { webhookRoutes } from "./routes/webhooks.js";
 import { environment } from "./services/highnote.js";
 
 const app = Fastify({ logger: true });
 
 // CORS — allow frontend dev server
 await app.register(fastifyCors, { origin: process.env.CORS_ORIGIN ?? "http://localhost:5173" });
+
+// Raw body access for webhook signature verification
+await app.register(fastifyRawBody, { field: "rawBody", encoding: "utf8", runFirst: true });
 
 // Zod validation & serialization
 app.setValidatorCompiler(validatorCompiler);
@@ -55,6 +63,7 @@ await app.register(fastifySwagger, {
       { name: "Provisioning", description: "Provision account holders (application + financial account)" },
       { name: "Client Tokens", description: "Generate scoped client tokens" },
       { name: "Simulation", description: "Test environment simulation tools (test env only)" },
+      { name: "Webhooks", description: "Webhook receiver, event viewer, and registration" },
     ],
   },
 });
@@ -73,6 +82,12 @@ function ensureTables() {
       account_holder_id TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_type TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      received_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 
@@ -85,6 +100,7 @@ app.get("/api/config", async () => ({ environment }));
 // Public routes (no auth required) — register BEFORE the auth plugin
 await app.register(authRoutes);
 await app.register(cardProductRoutes);
+await app.register(webhookRoutes);
 
 // Auth middleware — global hook, skips public paths
 registerAuthHook(app);
@@ -105,6 +121,24 @@ await app.register(atmRoutes);
 // Simulation routes — only registered in test environment
 if (environment === "test") {
   await app.register(simulateRoutes);
+}
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === "production") {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  await app.register(fastifyStatic, {
+    root: join(__dirname, "..", "public"),
+    prefix: "/",
+    wildcard: false,
+  });
+
+  // SPA fallback — serve index.html for non-API routes
+  app.setNotFoundHandler((request, reply) => {
+    if (request.url.startsWith("/api/")) {
+      return reply.status(404).send({ error: "Not found" });
+    }
+    return reply.sendFile("index.html");
+  });
 }
 
 // Start server
