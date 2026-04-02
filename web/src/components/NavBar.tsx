@@ -53,6 +53,7 @@ export function NavBar() {
               Simulate
             </Link>
           )}
+          {navLink("/webhooks", "Events")}
           {navLink("/profile", user?.email ?? "Profile")}
           <button
             onClick={logout}
