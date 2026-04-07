@@ -4,7 +4,7 @@ A full-stack demo app for the [Highnote](https://highnote.com) platform — cons
 
 **Stack:** Fastify 5 + React 19 + SQLite (Drizzle ORM) + Highnote Node SDK
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/bay1inc/highnote-node-demo)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mtarng/highnote-node-demo)
 
 ## Deploy to Render
 
@@ -13,6 +13,15 @@ A full-stack demo app for the [Highnote](https://highnote.com) platform — cons
    - `HIGHNOTE_API_KEY` — your Highnote API key (from [dashboard.highnote.com](https://dashboard.highnote.com))
    - `HIGHNOTE_CARD_PRODUCT_ID` — your card product ID
 3. Click **Create Web Service**
+
+Once deployed, your app is available at `https://<your-app>.onrender.com`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/` | Web app (login, dashboard, card management) |
+| `/docs` | Swagger UI — interactive API documentation |
+| `/health` | Health check |
+| `/webhooks` | Webhook events viewer (requires login) |
 
 ### Webhook Setup
 

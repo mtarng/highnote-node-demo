@@ -447,6 +447,38 @@ export async function listActivities(financialAccountId: string, pageSize?: numb
   return res.data;
 }
 
+// --- Wire Transfers (Review Workflow Events) ---
+
+export interface WireTransferAmount {
+  value: number;
+  currencyCode: string;
+}
+
+export interface WireTransfer {
+  __typename: "WireTransfer";
+  id: string;
+  amount: WireTransferAmount;
+  memo?: string;
+  status: string;
+  statusReason?: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewWorkflowEvent {
+  id: string;
+  reviewState: string;
+  createdAt: string;
+  updatedAt: string;
+  transfer?: WireTransfer;
+}
+
+export async function listWireTransfers(financialAccountId: string): Promise<ReviewWorkflowEvent[]> {
+  const res = await request<{ data: ReviewWorkflowEvent[] }>(`/api/financial-accounts/${financialAccountId}/wire-transfers`);
+  return res.data;
+}
+
 // --- Document Upload ---
 
 export interface DocumentUploadSession {

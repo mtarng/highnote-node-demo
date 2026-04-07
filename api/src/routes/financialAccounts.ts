@@ -87,6 +87,32 @@ export async function financialAccountRoutes(app: FastifyInstance) {
     }
   });
 
+  // List wire transfer review workflow events for a financial account
+  typedApp.get("/api/financial-accounts/:id/wire-transfers", {
+    schema: {
+      tags: ["Financial Accounts"],
+      description: "List wire transfer review workflow events for a financial account",
+      params: IdParamsSchema,
+    },
+  }, async (request, reply) => {
+    try {
+      const { financialAccountIds } = await getUserResourceIds(request);
+      if (!financialAccountIds.has(request.params.id)) {
+        return reply.status(403).send({ error: "Financial account does not belong to this user" });
+      }
+
+      const events = [];
+      for await (const event of highnote.financialAccounts.listReviewWorkflowEvents(request.params.id)) {
+        events.push(event);
+        if (events.length >= 50) break;
+      }
+
+      return { data: events };
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
   // Suspend a financial account
   typedApp.post("/api/financial-accounts/:id/suspend", {
     schema: {
