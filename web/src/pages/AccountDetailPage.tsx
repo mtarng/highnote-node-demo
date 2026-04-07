@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getMe,
   listActivities,
+  listWireTransfers,
+  type ReviewWorkflowEvent,
   issueCard,
   activateCard,
   suspendCard,
@@ -151,6 +153,18 @@ export function AccountDetailPage() {
     queryFn: () => listScheduledTransfers(id!),
     enabled: !!id,
     refetchInterval: Date.now() < pollUntil ? 5_000 : false,
+  });
+
+  const [wireTransfersExpanded, setWireTransfersExpanded] = useState(false);
+  const {
+    data: wireTransfers,
+    isLoading: wireTransfersLoading,
+    error: wireTransfersError,
+  } = useQuery({
+    queryKey: ["wire-transfers", id],
+    queryFn: () => listWireTransfers(id!),
+    enabled: !!id && wireTransfersExpanded,
+    staleTime: 60_000,
   });
 
   // Merge server cards with optimistic cards from mutations — optimistic first
@@ -1664,6 +1678,95 @@ export function AccountDetailPage() {
               </div>
             );
           })()}
+        </div>
+
+        {/* Wire Transfers Section */}
+        <div>
+          <button
+            onClick={() => setWireTransfersExpanded(!wireTransfersExpanded)}
+            className="flex w-full items-center justify-between mb-4"
+          >
+            <h2 className="text-lg font-medium text-gray-900">Wire Transfers</h2>
+            <div className="flex items-center gap-2">
+              {wireTransfers && wireTransfers.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                  {wireTransfers.length}
+                </span>
+              )}
+              <svg className={`h-5 w-5 text-gray-400 transition-transform ${wireTransfersExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          {wireTransfersExpanded && (
+            <>
+              {wireTransfersLoading && <LoadingSpinner message="Loading wire transfers..." />}
+
+              {wireTransfersError && (
+                <ErrorMessage message={wireTransfersError.message || "Failed to load wire transfers"} />
+              )}
+
+              {wireTransfers && wireTransfers.length === 0 && (
+                <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 py-8 px-6">
+                  <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <p className="mt-3 text-sm text-gray-500">No wire transfers</p>
+                </div>
+              )}
+
+              {wireTransfers && wireTransfers.length > 0 && (() => {
+                const reviewStateColors: Record<string, string> = {
+                  COMPLETED: "bg-green-100 text-green-800",
+                  APPROVED: "bg-green-100 text-green-800",
+                  PENDING: "bg-yellow-100 text-yellow-800",
+                  IN_REVIEW: "bg-yellow-100 text-yellow-800",
+                  FAILED: "bg-red-100 text-red-800",
+                  REJECTED: "bg-red-100 text-red-800",
+                };
+
+                return (
+                <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  {wireTransfers.map((event: ReviewWorkflowEvent) => {
+                    const transfer = event.transfer;
+                    const amount = transfer?.amount?.value != null ? (transfer.amount.value / 100).toFixed(2) : null;
+                    const isIncoming = transfer?.type === "INCOMING";
+
+                    return (
+                      <div key={event.id} className="border-b border-gray-100 last:border-b-0 px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {isIncoming ? "Incoming" : "Outgoing"} Wire Transfer
+                              {transfer?.memo && <span className="text-gray-500"> · {transfer.memo}</span>}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {event.createdAt ? new Date(event.createdAt).toLocaleString() : "—"}
+                            </p>
+                            {transfer?.statusReason && (
+                              <p className="text-xs text-red-600 mt-0.5">{transfer.statusReason.replace(/_/g, " ")}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 ml-4">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${reviewStateColors[event.reviewState] ?? "bg-gray-100 text-gray-800"}`}>
+                              {event.reviewState}
+                            </span>
+                            {amount && (
+                              <span className={`text-sm font-medium ${isIncoming ? "text-green-600" : "text-red-600"}`}>
+                                {isIncoming ? "+" : "-"}${amount}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                );
+              })()}
+            </>
+          )}
         </div>
 
         {/* Order Physical Card Modal */}
