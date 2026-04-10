@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { findATMLocations, type ATMLocation } from "../api/client";
 import { deduplicateATMs } from "../utils/dedup";
 
-// Fix Leaflet default marker icons (broken by bundlers)
 const defaultIcon = L.divIcon({
   className: "",
   html: `<svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -36,29 +34,6 @@ const FEATURE_OPTIONS = [
 
 const RADIUS_OPTIONS = [5, 10, 25, 50];
 
-function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-  return null;
-}
-
-function FitBounds({ locations }: { locations: ATMLocation[] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (locations.length === 0) return;
-    const coords = locations
-      .filter((a) => a.coordinates)
-      .map((a) => [Number(a.coordinates!.latitude), Number(a.coordinates!.longitude)] as [number, number]);
-    if (coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    }
-  }, [map, locations]);
-  return null;
-}
-
 interface Props {
   cardId: string;
   onClose: () => void;
@@ -74,6 +49,9 @@ export function ATMLocatorModal({ cardId, onClose }: Props) {
   const [center, setCenter] = useState<[number, number]>([37.7749, -122.4194]);
   const [geoResolved, setGeoResolved] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
   const fetchATMs = useCallback(
     (lat: string, lng: string, r: number) => {
@@ -132,6 +110,60 @@ export function ATMLocatorModal({ cardId, onClose }: Props) {
       );
 
   const deduped = deduplicateATMs(filtered);
+
+  // Initialize map
+  useEffect(() => {
+    if (!geoResolved || !mapContainerRef.current || mapRef.current) return;
+    const map = L.map(mapContainerRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+    }).setView(center, 12);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png").addTo(map);
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [geoResolved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync markers with deduped locations
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old markers
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    const markers = deduped
+      .map((atm, i) => {
+        if (!atm.coordinates) return null;
+        const lat = Number(atm.coordinates.latitude);
+        const lng = Number(atm.coordinates.longitude);
+        const marker = L.marker([lat, lng], {
+          icon: selectedIndex === i ? selectedIcon : defaultIcon,
+        }).addTo(map);
+
+        const popupHtml = `<div class="text-xs">
+          <p class="font-semibold">${atm.name || "ATM"}</p>
+          ${atm.address ? `<p class="text-gray-500 mt-0.5">${atm.address.streetAddress}, ${atm.address.locality}</p>` : ""}
+          ${atm.distance ? `<p class="text-indigo-600 font-medium mt-1">${atm.distance.length.toFixed(1)} mi away</p>` : ""}
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" rel="noopener noreferrer" class="inline-block mt-1 text-indigo-600 hover:text-indigo-800 font-medium">Directions</a>
+        </div>`;
+        marker.bindPopup(popupHtml);
+        marker.on("click", () => selectATM(i));
+        return marker;
+      })
+      .filter((m): m is L.Marker => m !== null);
+
+    markersRef.current = markers;
+
+    // Fit bounds
+    if (markers.length > 0) {
+      const bounds = L.latLngBounds(markers.map((m) => m.getLatLng()));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [deduped, selectedIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function selectATM(index: number) {
     setSelectedIndex(index === selectedIndex ? null : index);
@@ -221,53 +253,7 @@ export function ATMLocatorModal({ cardId, onClose }: Props) {
       <div className="flex flex-1 min-h-0">
         {/* Map */}
         <div className="flex-1 relative">
-          {geoResolved && (
-            <MapContainer
-              center={center}
-              zoom={12}
-              className="w-full h-full"
-              zoomControl={false}
-              attributionControl={false}
-            >
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-              <FitBounds locations={deduped} />
-              <MapUpdater center={center} zoom={12} />
-              {deduped.map((atm, i) =>
-                atm.coordinates ? (
-                  <Marker
-                    key={i}
-                    position={[Number(atm.coordinates.latitude), Number(atm.coordinates.longitude)]}
-                    icon={selectedIndex === i ? selectedIcon : defaultIcon}
-                    eventHandlers={{ click: () => selectATM(i) }}
-                  >
-                    <Popup>
-                      <div className="text-xs">
-                        <p className="font-semibold">{atm.name}</p>
-                        {atm.address && (
-                          <p className="text-gray-500 mt-0.5">
-                            {atm.address.streetAddress}, {atm.address.locality}
-                          </p>
-                        )}
-                        {atm.distance && (
-                          <p className="text-indigo-600 font-medium mt-1">
-                            {atm.distance.length.toFixed(1)} mi away
-                          </p>
-                        )}
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${atm.coordinates.latitude},${atm.coordinates.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-1 text-indigo-600 hover:text-indigo-800 font-medium"
-                        >
-                          Directions
-                        </a>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ) : null,
-              )}
-            </MapContainer>
-          )}
+          <div ref={mapContainerRef} className="w-full h-full" />
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000]">
               <div className="flex flex-col items-center gap-2">

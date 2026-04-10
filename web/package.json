@@ -14,14 +14,13 @@
   "dependencies": {
     "@highnoteplatform/card-viewer": "^1.4.1",
     "@highnoteplatform/document-upload": "^1.1.4",
-    "@highnoteplatform/secure-inputs": "^1.7.0",
+    "@highnoteplatform/secure-inputs": "^1.7.1",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.91.0",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.1",
     "tailwindcss": "^4.2.2"
   },
