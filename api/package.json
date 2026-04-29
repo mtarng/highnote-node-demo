@@ -20,7 +20,7 @@
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
-    "fastify": "^5.2.0",
+    "fastify": "^5.8.5",
     "fastify-raw-body": "^5.0.0",
     "fastify-type-provider-zod": "^6.1.0",
     "jsonwebtoken": "^9.0.3",
