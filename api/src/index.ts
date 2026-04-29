@@ -30,6 +30,7 @@ import { achTransferRoutes } from "./routes/ach.js";
 import { atmRoutes } from "./routes/atm.js";
 import { webhookRoutes } from "./routes/webhooks.js";
 import { environment } from "./services/highnote.js";
+import * as webhookRegistration from "./services/webhookRegistration.js";
 
 const app = Fastify({ logger: true });
 
@@ -84,7 +85,9 @@ function ensureTables() {
     );
     CREATE TABLE IF NOT EXISTS webhook_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT UNIQUE,
       event_type TEXT NOT NULL,
+      is_replay INTEGER NOT NULL DEFAULT 0,
       payload TEXT NOT NULL,
       received_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -148,6 +151,10 @@ try {
   ensureTables();
   await app.listen({ port, host: "0.0.0.0" });
   app.log.info(`Bay19 API running on http://localhost:${port}`);
+
+  // Fire-and-forget: webhook registration runs in the background after listen.
+  // Errors are caught internally and surfaced via /api/webhooks/status.
+  void webhookRegistration.init();
 } catch (err) {
   app.log.error(err);
   process.exit(1);

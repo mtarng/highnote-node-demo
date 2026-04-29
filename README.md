@@ -23,17 +23,18 @@ Once deployed, your app is available at `https://<your-app>.onrender.com`:
 | `/health` | Health check |
 | `/webhooks` | Webhook events viewer (requires login) |
 
-### Webhook Setup
+### Webhooks
 
-After deployment:
+On Render, webhooks register themselves automatically. Each deploy:
 
-1. Log into the deployed app and open the Swagger docs at `/docs`
-2. Use `POST /api/webhooks/register` to register your webhook:
-   - `name`: any descriptive name (e.g., "Demo Webhook")
-   - `subscriptions`: array of event names (e.g., `["CARD_PAYMENT_AUTHORIZED_EVENT"]`)
-3. Copy the `secret` from `signingKeys` in the response
-4. In the Render dashboard, set `HIGHNOTE_WEBHOOK_SECRET` to that secret and redeploy
-5. Webhook events will appear on the **Events** page in the app
+1. Detects the public URL via `RENDER_EXTERNAL_URL` (auto-injected by Render).
+2. Removes any prior `bay19-auto-*` notification targets so the dashboard stays clean.
+3. Calls Highnote to register a fresh notification target named `bay19-auto-<commit-sha>` subscribed to all events.
+4. Holds the returned signing key in process memory (never logged, never persisted, never exposed via the API). The key rotates every deploy by design.
+
+Visit the **Webhook Events** page in the app to see the registration status (Active / Pending / Failed / Deactivated) and a live event log. The status panel live-refreshes from Highnote, so it reflects the true state of the target. If registration fails (e.g., transient Highnote outage), use the **Re-register** button on that page to retry.
+
+**Note:** `HIGHNOTE_WEBHOOK_SECRET` is no longer required. To use webhooks during local development, set `WEBHOOK_PUBLIC_URL` to a public tunnel URL (e.g., from ngrok) and the same auto-registration flow runs locally.
 
 ## Local Development
 

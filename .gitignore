@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 .claude/
 .superpowers/
 docs/superpowers/
+
+# MCP / agent tooling artifacts
+.playwright-mcp/
+.serena/

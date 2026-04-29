@@ -1,12 +1,21 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { z } from "zod";
 import { db, schema, sqlite } from "../db/index.js";
 import { highnote } from "../services/highnote.js";
 import { verifyWebhookSignature } from "@highnote-ts/highnote-nodejs-sdk";
+import * as webhookRegistration from "../services/webhookRegistration.js";
 import { WebhookEventsQuerySchema, WebhookRegisterBodySchema } from "../types.js";
 
-const WEBHOOK_SECRET = process.env.HIGHNOTE_WEBHOOK_SECRET;
+const DeliveryAttemptsQuerySchema = z.object({
+  unsuccessfulOnly: z.coerce.boolean().optional().default(false),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+});
+
+const ReplayParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
 
 export async function webhookRoutes(app: FastifyInstance) {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
@@ -18,17 +27,14 @@ export async function webhookRoutes(app: FastifyInstance) {
       description: "Receive Highnote webhook events",
     },
   }, async (request, reply) => {
-    if (!WEBHOOK_SECRET) {
-      request.log.warn("HIGHNOTE_WEBHOOK_SECRET not set — skipping verification");
-    }
+    const secret = webhookRegistration.getSecret();
 
     const rawBody = (request as { rawBody?: string }).rawBody;
     if (!rawBody) {
       return reply.status(400).send({ error: "Missing request body" });
     }
 
-    // Verify signature if secret is configured
-    if (WEBHOOK_SECRET) {
+    if (secret) {
       const signature = request.headers["highnote-signature"] as string | undefined;
       if (!signature) {
         return reply.status(401).send({ error: "Missing highnote-signature header" });
@@ -37,15 +43,18 @@ export async function webhookRoutes(app: FastifyInstance) {
       const result = verifyWebhookSignature({
         payload: rawBody,
         signature,
-        secret: WEBHOOK_SECRET,
+        secret,
       });
 
       if (!result.valid) {
         return reply.status(401).send({ error: "Invalid webhook signature" });
       }
+
+      webhookRegistration.noteVerifiedEventReceived();
+    } else {
+      request.log.warn("No signing key in memory — skipping webhook signature verification");
     }
 
-    // Parse and store the event
     let event: Record<string, unknown>;
     try {
       event = JSON.parse(rawBody);
@@ -53,17 +62,28 @@ export async function webhookRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Invalid JSON payload" });
     }
 
+    const eventId = (event.id as string | undefined) ?? null;
     const eventType =
+      (event.name as string) ??
       (event.type as string) ??
       ((event.data as Record<string, unknown>)?.type as string) ??
       "UNKNOWN";
+    const isReplay = request.headers["highnote-replay"] !== undefined;
 
-    db.insert(schema.webhookEvents).values({
-      eventType,
-      payload: rawBody,
-    }).run();
+    if (eventId) {
+      sqlite
+        .prepare(
+          "INSERT OR IGNORE INTO webhook_events (event_id, event_type, is_replay, payload) VALUES (?, ?, ?, ?)",
+        )
+        .run(eventId, eventType, isReplay ? 1 : 0, rawBody);
+    } else {
+      request.log.warn({ eventType }, "Event missing id; inserting without idempotency");
+      db.insert(schema.webhookEvents)
+        .values({ eventType, isReplay, payload: rawBody })
+        .run();
+    }
 
-    request.log.info({ eventType }, "Webhook event received");
+    request.log.info({ eventType, eventId, isReplay }, "Webhook event received");
     return reply.status(200).send({ received: true });
   });
 
@@ -96,26 +116,133 @@ export async function webhookRoutes(app: FastifyInstance) {
     });
   });
 
+  // GET /api/webhooks/status — Registration status (JWT-protected)
+  typedApp.get("/api/webhooks/status", {
+    schema: {
+      tags: ["Webhooks"],
+      description: "Get current webhook registration status",
+    },
+  }, async (_request, reply) => {
+    return reply.send(await webhookRegistration.getStatus());
+  });
+
+  // GET /api/webhooks/delivery-attempts — List Highnote's record of delivery attempts (JWT-protected)
+  typedApp.get("/api/webhooks/delivery-attempts", {
+    schema: {
+      tags: ["Webhooks"],
+      description:
+        "List recent delivery attempts as recorded by Highnote for the current target. Distinct from /events, which lists events the receiver has persisted locally.",
+      querystring: DeliveryAttemptsQuerySchema,
+    },
+  }, async (request, reply) => {
+    const status = webhookRegistration.getStatusSync();
+    if (!status.targetId) {
+      return reply.send({ attempts: [], targetId: null });
+    }
+
+    const { unsuccessfulOnly, limit } = request.query;
+    const attempts: Array<{
+      eventId: string | null;
+      eventName: string | null;
+      createdAt: string | null;
+      hasSuccessfulDelivery: boolean | null;
+    }> = [];
+
+    try {
+      for await (const e of highnote.webhooks.listEvents(status.targetId, { unsuccessfulOnly })) {
+        attempts.push({
+          eventId: e.event?.id ?? null,
+          eventName: e.event?.name ?? null,
+          createdAt: e.event?.createdAt ?? null,
+          hasSuccessfulDelivery: e.hasSuccessfulDelivery ?? null,
+        });
+        if (attempts.length >= limit) break;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to list delivery attempts";
+      return reply.status(502).send({ error: message });
+    }
+
+    return reply.send({ attempts, targetId: status.targetId });
+  });
+
+  // POST /api/webhooks/events/:id/replay — Replay an event from our log via Highnote (JWT-protected)
+  typedApp.post("/api/webhooks/events/:id/replay", {
+    schema: {
+      tags: ["Webhooks"],
+      description:
+        "Ask Highnote to replay a stored event to the current target. The event must have a Highnote event id (older events without one cannot be replayed).",
+      params: ReplayParamsSchema,
+    },
+  }, async (request, reply) => {
+    const { id } = request.params;
+
+    const row = db
+      .select()
+      .from(schema.webhookEvents)
+      .where(eq(schema.webhookEvents.id, id))
+      .get();
+
+    if (!row) {
+      return reply.status(404).send({ error: "Event not found" });
+    }
+    if (!row.eventId) {
+      return reply.status(400).send({
+        error: "This event has no Highnote event id and cannot be replayed",
+      });
+    }
+
+    const status = webhookRegistration.getStatusSync();
+    const targetIds = status.targetId ? [status.targetId] : undefined;
+
+    try {
+      await highnote.webhooks.replay({
+        notificationEventId: row.eventId,
+        targetIds,
+      });
+      return reply.send({ replayed: true, eventId: row.eventId, targetIds });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to replay event";
+      return reply.status(502).send({ error: message });
+    }
+  });
+
   // POST /api/webhooks/register — Register webhook target (JWT-protected)
+  // - Empty body: re-runs auto-registration (manual retry path).
+  // - Body provided: legacy explicit-name path. Registers via SDK with the given subscriptions
+  //   and stores the returned signing key in memory (overrides auto-registered key).
   typedApp.post("/api/webhooks/register", {
     schema: {
       tags: ["Webhooks"],
-      description: "Register a webhook notification target with Highnote",
-      body: WebhookRegisterBodySchema,
+      description:
+        "Re-register the webhook target. Send empty body to re-run auto-registration; send a body to register a custom-named target.",
+      body: WebhookRegisterBodySchema.partial().optional(),
     },
   }, async (request, reply) => {
-    const { name, subscriptions } = request.body;
+    const body = request.body as
+      | { name?: string; subscriptions?: string[] }
+      | undefined;
 
-    // Build the webhook URL from the request origin
+    if (!body || (!body.name && !body.subscriptions)) {
+      await webhookRegistration.init();
+      return reply.send(await webhookRegistration.getStatus());
+    }
+
+    if (!body.name || !body.subscriptions) {
+      return reply.status(400).send({
+        error: "Both name and subscriptions are required when providing a body",
+      });
+    }
+
     const protocol = request.headers["x-forwarded-proto"] ?? "https";
     const host = request.headers["x-forwarded-host"] ?? request.headers.host;
     const webhookUrl = `${protocol}://${host}/api/webhooks`;
 
     try {
       const target = await highnote.webhooks.add({
-        name,
+        name: body.name,
         uri: webhookUrl,
-        subscriptions: subscriptions as never[],
+        subscriptions: body.subscriptions as never[],
       });
 
       return reply.status(201).send({
@@ -123,8 +250,8 @@ export async function webhookRoutes(app: FastifyInstance) {
         name: target.name,
         uri: target.uri,
         status: target.status,
-        signingKeys: (target as Record<string, unknown>).signingKeys,
-        message: "Webhook registered. Copy the signing secret from signingKeys and set it as HIGHNOTE_WEBHOOK_SECRET in your Render environment variables.",
+        message:
+          "Webhook registered. Note: signing key is not persisted by the server in this mode.",
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to register webhook";

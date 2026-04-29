@@ -13,7 +13,9 @@ export const users = sqliteTable("users", {
 
 export const webhookEvents = sqliteTable("webhook_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  eventId: text("event_id").unique(),
   eventType: text("event_type").notNull(),
+  isReplay: integer("is_replay", { mode: "boolean" }).notNull().default(false),
   payload: text("payload").notNull(),
   receivedAt: text("received_at")
     .notNull()
