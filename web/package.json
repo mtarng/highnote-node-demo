@@ -16,7 +16,7 @@
     "@highnoteplatform/document-upload": "^1.1.5",
     "@highnoteplatform/secure-inputs": "^1.7.1",
     "@tailwindcss/vite": "^4.2.2",
-    "@tanstack/react-query": "^5.97.0",
+    "@tanstack/react-query": "^5.100.6",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "react": "^19.2.5",
