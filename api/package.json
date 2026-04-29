@@ -14,7 +14,7 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/static": "^9.1.0",
     "@fastify/swagger": "^9.7.0",
-    "@fastify/swagger-ui": "^5.2.5",
+    "@fastify/swagger-ui": "^5.2.6",
     "@highnote-ts/highnote-nodejs-sdk": "^0.1.0-alpha.18",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.8.0",
